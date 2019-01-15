@@ -7,6 +7,7 @@
 package _libs.kurmix;
 import _config.Config;
 import java.sql.DriverManager;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
@@ -17,7 +18,7 @@ public class Connection {
     
     private static java.sql.Connection con;
     
-    static Statement start(Controller cnt) {
+    static void start(Controller cnt) {
         Connection.con=null;
         Statement query = null;
         String driver  = "Driver no encontrado";
@@ -38,52 +39,65 @@ public class Connection {
             Class.forName(driver);
         } catch (ClassNotFoundException e) {
             String[] er = {"306",driver,e.toString()}; 
-            cnt.setKurmix(er);return null;
+            cnt.setKurmix(er);
         }
         
         try {            
             Connection.con = DriverManager.getConnection(conex,Config.USER,Config.PASS);
         } catch (SQLException e) {          
             String[] er = {"306",conex,e.toString()}; 
-            cnt.setKurmix(er);return null;
+            cnt.setKurmix(er);
         }  
         
         try {
             query = Connection.con.createStatement();
         } catch (SQLException e) { }
-        return query;
+        
     }
     
-    static String[][] query(String sql,Controller cnt) {          
-        Statement query = Connection.start(cnt);
+    static String[][] query(String sql, String[] array, Controller cnt) { 
+        Connection.start(cnt);
+        PreparedStatement query = null;
         if(!sql.trim().substring(0,6).equalsIgnoreCase("select")){
             try { 
-                query.execute(sql);
-                Connection.con.close();
-                String aux[][] = {{"1"}};
+                query = Connection.con.prepareStatement(sql,Statement.RETURN_GENERATED_KEYS);
+                for(int i=0;i<array.length;i++){
+                    query.setString((int)i+1, array[i]);
+                }
+                
+                query.executeUpdate(); 
+                String bb = "0";
+                try{
+                    ResultSet generatedKeys = query.getGeneratedKeys();
+                    if (generatedKeys.next()) {
+                        bb = ""+generatedKeys.getInt(1);
+                    }
+                }catch(Exception e){}
+                String aux[][] = {{""+bb}};
                 return aux;
             }catch (Exception ex) {
                 String aux[][] = {{"0"}};
                 return aux;
             }
         }
-       
+        
         try {
-            ResultSet tabla = query.executeQuery(sql); 
+            query = Connection.con.prepareStatement(sql);
+            for(int i=0;i<array.length;i++){
+                query.setString((int)i+1, array[i]);
+            }
+            
+            ResultSet tabla = query.executeQuery(); 
             ResultSetMetaData rsmd = tabla.getMetaData();
             
             int n = rsmd.getColumnCount();
-            ArrayList<String[]> a=new ArrayList<String[]>();
+            ArrayList<String[]> a = new ArrayList<String[]>();
             while(tabla.next()){  
-                ArrayList<String> b=new ArrayList<String>();
+                String[] b = new String[n];
                 for (int i = 0; i < n; i++) {
-                    b.add(tabla.getString(i+1));
+                    b[i] = tabla.getString(i+1);
                 }
-                String[] c = new String[b.size()];
-                for (int i = 0; i < b.size(); i++) {
-                    c[i]=b.get(i);
-                }
-                a.add(c);                 
+                a.add(b);                 
             }
                 
             Connection.con.close();
@@ -91,8 +105,7 @@ public class Connection {
             String[][] d = new String[a.size()][n];
             for(int i = 0; i < a.size(); i++) {
                 d[i] = a.get(i);
-            }                
-            if(d.length==0) return null;     
+            }                  
             return d;
             
         }catch (SQLException e) { 
@@ -104,9 +117,9 @@ public class Connection {
     
     static Table getTable(String sql,Controller cnt){
         Table table = null;
-        Statement query = Connection.start(cnt);
+        //Statement query = Connection.start(cnt);
         try {
-            ResultSet tabla = query.executeQuery(sql);        
+            ResultSet tabla=null;// = query.executeQuery(sql);        
             ResultSetMetaData rsmd = tabla.getMetaData();
          
             int n = rsmd.getColumnCount();
@@ -128,8 +141,7 @@ public class Connection {
             return table;
         }catch (SQLException e) { 
             String[] er = {"303",sql,e.toString()}; 
-            cnt.setKurmix(er);return null; }
-        
+            cnt.setKurmix(er);return null; }     
     } 
 }    
     

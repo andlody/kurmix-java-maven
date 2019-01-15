@@ -54,7 +54,11 @@ public class Model {
     }
     
     protected String[][] query(String query){
-        return Connection.query(query,this.c);
+        return Connection.query(query,new String[0],this.c);
+    }
+    
+    protected String[][] query(String query,String[] array){
+        return Connection.query(query, array, this.c);
     }
     
     protected String filterSql(Object string){        

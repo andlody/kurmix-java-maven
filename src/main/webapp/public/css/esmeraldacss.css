@@ -81,7 +81,7 @@ a:hover, a:focus {
     background: -webkit-linear-gradient(left, #041300 , #266102);
     background: -o-linear-gradient(right, #041300, #266102);
     background: -moz-linear-gradient(right, #041300, #266102);
-    background: linear-gradient(to right, #041300 , #266102)
+    background: linear-gradient(to right, #041300 , #266102);
     padding: 10px;
 }
 .logo-lenguaje{
